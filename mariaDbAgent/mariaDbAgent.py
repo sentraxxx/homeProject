@@ -2,13 +2,15 @@ import sys
 import mariadb
 import json
 import datetime
-
-
-print(sys.path)
-sys.path.append('/home/pi/share/dev/homeProject/')
-
+import logging
+import os
 
 class mariaDbAgent:
+    """基本的なDBアクセスを提供. Method毎にConnection, Cursorを生成/終了する.
+
+    Returns:
+        インスタンス: mariaDBアクセスのためのインスタンス
+    """
 
     TYPE_EVENT = 'event'
     TYPE_ALARM = 'alarm'
@@ -17,6 +19,15 @@ class mariaDbAgent:
     SUBTYPE_TEMP = 'temp'
 
     def __init__(self, database='homeDB'):
+
+        # Logging
+        if os.path.isdir('./logs/'):
+            print('./logs/はあったよ')
+            pass
+        else:
+            os.mkdir('./logs/')
+            print('makeしたつもり')
+        
 
         self.DB_HOST = 'localhost'
         self.DB_USER = 'root'
