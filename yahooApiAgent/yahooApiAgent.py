@@ -17,7 +17,6 @@ class yahooApiAgent():
 
 
 
-
     def getRainLevel(self, time=0):
 
         now = datetime.datetime.now()
@@ -28,7 +27,7 @@ class yahooApiAgent():
         output = '&output=' + 'json'
         date = '&date=' + now.strftime('%Y%m%d%H%M')
         interval = '&interval=5'
-
+        
         print(date)
         #req = self.URL_YOLP_WEATHER + appid + coodinate + output + date + interval
         req = self.URL_YOLP_WEATHER + appid + coodinate + output + date+ interval

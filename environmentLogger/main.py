@@ -11,6 +11,3 @@ res = a.getTemp()
 
 print('temp= ', res['temp'], 'limit= ', res['limit-remain'])
 
-
-
-
