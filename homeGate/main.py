@@ -5,9 +5,12 @@ import json
 import pychromecast
 from voicetext import VoiceText
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
+from boto3.dynamodb.conditions import Key
 import datetime
 import os
+import sys
+
+sys.path.append('/home/pi/share/dev/homeProject/')
 
 VT_APPKEY = os.environ['VT_APPKEY']
 VT_DEFAULT_SPEAKER = 'hikari'
@@ -29,21 +32,20 @@ def update_ngrok_url(url):
     t = str(datetime.datetime.now())
     db = boto3.resource('dynamodb')
     table = db.Table('MY_HOST')
-    
 
     # 最新レコード取得
     print('get latest update record of ngrok..')
     res = table.query(
-        KeyConditionExpression= Key('NAME').eq('ngrok'),
-        ScanIndexForward= False,
-        Limit= 1
+        KeyConditionExpression=Key('NAME').eq('ngrok'),
+        ScanIndexForward=False,
+        Limit=1
     )
 
     # 最新レコードDeisable化
     print('Disable latest ngrok record..')
     res['Items'][0]['STATUS'] = 'Disable'
     table.put_item(
-        Item= res['Items'][0]
+        Item=res['Items'][0]
     )
 
     # 更新レコード
@@ -75,10 +77,11 @@ def make_wav(text, speaker, emotion, emlv, pitch, speed, volume):
     vt.speed(speed)
     vt.volume(volume)
 
-    with open(f'cache/{text}_{speaker}_{emotion}_{emlv}_{pitch}_{speed}_{volume}.wav', 'wb')as f:
+    with open(f'homeGate/cache/{text}_{speaker}_{emotion}_{emlv}_{pitch}_{speed}_{volume}.wav', 'wb')as f:
         f.write(vt.to_wave(text))
         cast(f"{ngrokurl}/cache/{text}_{speaker}_{emotion}_{emlv}_{pitch}_{speed}_{volume}.wav", "audio/wav")
     return
+
 
 def cast(url, mimetype):
     print(f"wav URL is {url}.")
@@ -90,6 +93,8 @@ def cast(url, mimetype):
 
 app = Flask(__name__)
 app.config['port'] = 8080
+
+# API定義
 
 
 @app.route("/")
@@ -114,7 +119,7 @@ def hoge():
     speakers = ['show', 'haruka', 'hikari', 'takeru', 'santa', 'bear']
     emotions = ['happiness', 'anger', 'sadness']
 
-    speaker = speakers[1]
+    speaker = speakers[2]
     emotion = emotions[0]
     emlv = 2
     pitch = 100

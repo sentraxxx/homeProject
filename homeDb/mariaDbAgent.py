@@ -5,6 +5,13 @@ import datetime
 import logging
 import os
 
+sys.path.append('/home/pi/share/dev/homeProject/')
+
+from homeUtil import handleEnvironment
+
+# Environment.
+LOG_LEVEL = logging.DEBUG
+
 class mariaDbAgent:
     """基本的なDBアクセスを提供. Method毎にConnection, Cursorを生成/終了する.
 
@@ -12,7 +19,7 @@ class mariaDbAgent:
         インスタンス: mariaDBアクセスのためのインスタンス
     """
 
-    TYPE_EVENT = 'event'
+    TYPE_RECORD = 'record'
     TYPE_ALARM = 'alarm'
     SUBTYPE_HOME_TEMP = 'home_temp'
     SUBTYPE_RAIN_LEVEL = 'rain_level'
@@ -20,15 +27,12 @@ class mariaDbAgent:
 
     def __init__(self, database='homeDB'):
 
-        # Logging
-        if os.path.isdir('./logs/'):
-            print('./logs/はあったよ')
-            pass
-        else:
-            os.mkdir('./logs/')
-            print('makeしたつもり')
-        
+        # Logset
+        handleEnvironment.initialize()
+        self.l=logging.getLogger(__name__)
+        self.l.setLevel(LOG_LEVEL)
 
+        # DBset
         self.DB_HOST = 'localhost'
         self.DB_USER = 'root'
         self.DB_DATABASE = database
@@ -50,9 +54,15 @@ class mariaDbAgent:
         )
 
         cursor = connection.cursor()
-        cursor.execute(sql)
+
+        try:
+            cursor.execute(sql)
+            
+        except Exception as e:
+            self.l.err(e)
 
         return
+
 
     def getData(self, table='test', cols=['*']):
         """tableのcols要素を検索.
@@ -89,12 +99,16 @@ class mariaDbAgent:
 
         print('col:', colstr)
 
-        query = 'select ' + colstr + ' from ' + table
+        sql = 'select ' + colstr + ' from ' + table
 
-        cursor.execute(query)
+        try:
+            cursor.execute(sql)
+            res = cursor.fetchall() 
+            set.log.info('sql SELECT executed. sql=', str(sql))
 
-        res = cursor.fetchall()
-        print('rowcount: ', cursor.rowcount)
+        except Exception as e:
+            self.l.err(e)
+            res = None
 
         cursor.close()
         connection.close()
@@ -142,7 +156,38 @@ class mariaDbAgent:
 
         return res
 
+    def getConnection(self):
+        """mariaDBを直接操作する場合に使用するconnection.
+        connection.Cursor()でcursorをつかみ、sql操作する。
+        https://github.com/mariadb-corporation/mariadb-connector-python
+
+        Returns:
+            mariadb.connection: homeDBへのconnection.
+        """
+
+        connection = mariadb.connect(
+            user=self.DB_USER,
+            #password = self.DB_PASSWD,
+            database=self.DB_DATABASE,
+            host=self.DB_HOST
+        )
+
+        return connection
+
     def setEventData(self, type: str, subtype: str, time: str, place: dict, data: dict,  table='event'):
+        """homeDBにEventデータを登録する。
+
+        Args:
+            type (str): event|alarm. mariadbAgent.TYPE_xxx
+            subtype (str): home_temp|temp|... mariadbAgent.SUBTYPE_xxx
+            time (str): YYYYMMDDhhmi形式. Noneの場合現在時刻が設定される。
+            place (dict): JSON形式の位置情報. latitude(経度 -90~90), longitude(経度 -180~180).
+            data (dict): TYPE,SUBTYPE毎に定義したデータ形式(JSON). 
+            table (str, optional): 'event'固定. Defaults to 'event'.
+
+        Returns:
+            result_success(bool): success=True. SQL error=False.
+        """
 
         # default value set
         if time is None:
@@ -168,7 +213,7 @@ class mariaDbAgent:
         if place:
             col_op += ', place'
         if data:
-            col_op += col_op + ', data'
+            col_op += ', data'
 
         # close col
         sql += col_op + ') '
@@ -186,19 +231,26 @@ class mariaDbAgent:
         # close optional values
         sql += op_values + ')'
 
-        print('sql: ', sql)
-        res = cursor.execute(sql)
+        try:
+            self.l.info('sql INSERT. sql=' + str(sql))
+            cursor.execute(sql)
+            self.l.info('sql INSERT executed.')
+            result_success = True
+
+        except Exception as e:
+            self.l.error(e)
+            result_success = False
 
         cursor.close()
         connection.close()
 
-        return res
+        return result_success
 
 
 if __name__ == "__main__":
 
     db = mariaDbAgent()
-    res = db.setEventData(table='event', type=db.TYPE_EVENT, subtype=db.SUBTYPE_HOME_TEMP, data={
+    res = db.setEventData(table='event', type=db.TYPE_RECORD, subtype=db.SUBTYPE_HOME_TEMP, data={
                           'temp': 29, 'device': 'natureRemo'}, time=None, place=None)
     res = db.getData(table='event')
     print(res)
