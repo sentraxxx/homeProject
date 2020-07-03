@@ -67,6 +67,7 @@ if __name__ == "__main__":
         # natureRemoの室温記録
         el = environmentLogger()
         el.recordHomeTemp()
+        el.recordWeather()
 
         log.info('end every 10min task.')
 

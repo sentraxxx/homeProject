@@ -75,10 +75,10 @@ class environmentLogger:
         dailyj = resj['daily']
         self.log.debug(dailyj)
 
-        # current weater登録
+        # current weater
         date_unix = currentj['dt']
         date = agent.utcToJst(date_unix)
-        date_format = datetime.datetime.strftime(date, '%Y%m%d%H%m')
+        date_format = datetime.datetime.strftime(date, '%Y%m%d%H%M')
 
         currentj['date'] = str(date_format)
         currentj['device'] = 'OpenWeatherAPI'
@@ -91,13 +91,24 @@ class environmentLogger:
             mariaDbAgent.TYPE_CONDITION, mariaDbAgent.SUBTYPE_CURRENT_WEATHER, date_format, self.place, data)
 
         if result_success:
-            self.log.info('record home_temp event succeed.')
+            self.log.info('Condition OpenWeatherAPI:Current_Weather inserted.')
         else:
-            self.log.error('record home_temp event failed.')
+            self.log.error('Condition OpenWeatherAPI:Current_Weather insert failed.')
 
-        # Current temp
+        # Current temp DB Insert.
         current_temp = round(currentj['temp'], 1)
+
+        data = {'temp': current_temp, 'device': 'OpenWeatherAPI'}
+
+        result_success = mdb.setEventData(mariaDbAgent.TYPE_CONDITION, mariaDbAgent.SUBTYPE_CURRENT_TEMP, date_format, self.place, data)
+
+        if result_success:
+            self.log.info('Condition OpenWeatherAPI:Current_Temp inserted.')
+        else:
+            self.log.error('Condition OpenWeatherAPI:Current_Temp insert failed.')
         
+        
+
 
     def recordRaspberryPiTemp():
         pass
