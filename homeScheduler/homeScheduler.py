@@ -24,15 +24,15 @@ class taskManager:
 
         if t.minute == 0:
             self.IS_EVERY_HOUR = True
-            log.info('this is every hour schedule')
+            log.debug('this is every hour schedule')
 
         if t.minute == 0 or t.minute == 30:
             self.IS_EVERY_THIRTY_MIN = True
-            log.info('this is every 30min schedule')
+            log.debug('this is every 30min schedule')
 
         if t.minute % 10 == 0:
             self.IS_EVERY_TEN_MIN = True
-            log.info('this is every 10min schedule')
+            log.debug('this is every 10min schedule')
 
         return
 

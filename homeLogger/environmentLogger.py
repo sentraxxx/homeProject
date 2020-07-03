@@ -1,12 +1,15 @@
 import logging
 import os
 import sys
+import json
+import datetime
 
 sys.path.append('/home/pi/share/dev/homeProject/')
 
 from homeDb import mariaDbAgent
 from homeUtil import handleEnvironment
 from natureRemo import natureRemoAgent
+from openWeatherAgent import openWeatherAgent
 
 # Environment
 LOG_LEVEL = logging.DEBUG
@@ -31,8 +34,6 @@ class environmentLogger:
             self.log.error('set place error.')
             self.log.debug(e)
 
-        print(self.place)
-
         return
 
     def recordHomeTemp(self):
@@ -40,7 +41,7 @@ class environmentLogger:
         self.log.info('start recordHomeTemp')
 
         remo = natureRemoAgent()
-        temp = round(remo.getTemp()['temp'], 1)
+        temp: float = round(remo.getTemp()['temp'], 1)
         device = 'natureRemo'
 
         self.log.info('get home_temp from natureremo: ' + str(temp))
@@ -57,6 +58,49 @@ class environmentLogger:
             self.log.error('record home_temp event failed.')
 
         return
+
+    def recordWeather(self):
+
+        agent = openWeatherAgent()
+        res = agent.getCurrentOneCall()
+        self.log.debug(f'openWeatherAPI. OneCall res = {res}')
+        resj = json.loads(res)
+
+        currentj = resj['current']
+        self.log.debug(currentj)
+
+        hourlyj = resj['hourly']
+        self.log.debug(hourlyj)
+
+        dailyj = resj['daily']
+        self.log.debug(dailyj)
+
+        # current weater登録
+        date_unix = currentj['dt']
+        date = agent.utcToJst(date_unix)
+        date_format = datetime.datetime.strftime(date, '%Y%m%d%H%m')
+
+        currentj['date'] = str(date_format)
+        currentj['device'] = 'OpenWeatherAPI'
+
+        data = currentj
+
+        # Current Weather DB insert
+        mdb = mariaDbAgent()
+        result_success = mdb.setEventData(
+            mariaDbAgent.TYPE_CONDITION, mariaDbAgent.SUBTYPE_CURRENT_WEATHER, date_format, self.place, data)
+
+        if result_success:
+            self.log.info('record home_temp event succeed.')
+        else:
+            self.log.error('record home_temp event failed.')
+
+        # Current temp
+        current_temp = round(currentj['temp'], 1)
+        
+
+    def recordRaspberryPiTemp():
+        pass
 
 
 if __name__ == "__main__":
