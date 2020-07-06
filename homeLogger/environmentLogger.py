@@ -10,6 +10,7 @@ from homeDb import mariaDbAgent
 from homeUtil import handleEnvironment
 from natureRemo import natureRemoAgent
 from openWeatherAgent import openWeatherAgent
+from raspberryPiAgent import raspUtil
 
 # Environment
 LOG_LEVEL = logging.DEBUG
@@ -85,32 +86,63 @@ class environmentLogger:
 
         data = currentj
 
-        # Current Weather DB insert
+        # Record Weather DB insert
         mdb = mariaDbAgent()
         result_success = mdb.setEventData(
-            mariaDbAgent.TYPE_CONDITION, mariaDbAgent.SUBTYPE_CURRENT_WEATHER, date_format, self.place, data)
+            mariaDbAgent.TYPE_RECORD, mariaDbAgent.SUBTYPE_WEATHER, date_format, self.place, data)
 
         if result_success:
             self.log.info('Condition OpenWeatherAPI:Current_Weather inserted.')
         else:
             self.log.error('Condition OpenWeatherAPI:Current_Weather insert failed.')
 
-        # Current temp DB Insert.
-        current_temp = round(currentj['temp'], 1)
+        # Update Current Weather.
+        value = f'datetime = {date_format}, data={data}'
+        where_type = mdb.TYPE_CONDITION
+        where_subtype = mdb.SUBTYPE_CURRENT_WEATHER
 
-        data = {'temp': current_temp, 'device': 'OpenWeatherAPI'}
-
-        result_success = mdb.setEventData(mariaDbAgent.TYPE_CONDITION, mariaDbAgent.SUBTYPE_CURRENT_TEMP, date_format, self.place, data)
+        result_success = mdb.updateData(value=value, type=where_type, subtype=where_subtype)
 
         if result_success:
-            self.log.info('Condition OpenWeatherAPI:Current_Temp inserted.')
+            self.log.info('update current_weather succeed.')
         else:
-            self.log.error('Condition OpenWeatherAPI:Current_Temp insert failed.')
-        
-        
+            self.log.error('update current_weather failed.')
 
+        return
+
+        # Record temp DB Insert.
+        temp = round(currentj['temp'], 1)
+
+        data = {'temp': temp, 'device': 'OpenWeatherAPI'}
+
+        result_success = mdb.setEventData(mariaDbAgent.TYPE_RECORD, mariaDbAgent.SUBTYPE_TEMP, date_format, self.place, data)
+
+        if result_success:
+            self.log.info('Record OpenWeatherAPI:Temp inserted.')
+        else:
+            self.log.error('Record OpenWeatherAPI:Temp insert failed.')
+
+        # Update current_temp
+        where_type = mdb.TYPE_CONDITION
+        where_subtype = mdb.SUBTYPE_CURRENT_TEMP
+        value = f'datetime={date_format}, data={data}'
+
+        result_success = mdb.updateData(value=value, type=where_type, subtype=where_subtype)
+
+        if result_success:
+            self.log.info('Condition OpenWeatherAPI:Current_Temp Updated.')
+        else:
+            self.log.error('Condition OpenWeatherAPI:Current_Temp Update failed.')
 
     def recordRaspberryPiTemp():
+
+        agent = raspUtil()
+        cputemp = agent.getCpuTemp()
+
+        data = {'cpu_temp': cputemp, 'device': 'vcgencmd'}
+
+
+
         pass
 
 

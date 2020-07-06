@@ -9,7 +9,7 @@ sys.path.append('/home/pi/share/dev/homeProject/')
 
 
 # Environment.
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 
 class mariaDbAgent:
@@ -19,16 +19,17 @@ class mariaDbAgent:
         インスタンス: mariaDBアクセスのためのインスタンス
     """
 
-    TYPE_RECORD = 'record'
-    TYPE_ALARM = 'alarm'
-    TYPE_CONDITION = 'condition'
-    SUBTYPE_HOME_TEMP = 'home_temp'
-    SUBTYPE_RAIN_LEVEL = 'rain_level'
-    SUBTYPE_TEMP = 'temp'
-    SUBTYPE_CURRENT_WEATHER = 'current_weather'
-    SUBTYPE_CURRENT_TEMP = 'current_temp'
-    SUBTYPE_CURRENT_WIND = 'current_wind'
-    SUBTYPE_CURRENT_TEMP = 'current_temp'
+    TYPE_RECORD = 'record'                      # 継続的な記録
+    TYPE_ALARM = 'alarm'                        # 何らかのアクションを起こすトリガ
+    TYPE_CONDITION = 'condition'                # 現在の状況
+    SUBTYPE_HOME_TEMP = 'home_temp'             # nature Remoから取得する室温
+    SUBTYPE_RAIN_LEVEL = 'rain_level'           # Yahoo APIから取得する降水量
+    SUBTYPE_TEMP = 'temp'                       # 外気温
+    SUBTYPE_WEATHER = 'weather'                 # 天気全般
+    SUBTYPE_CURRENT_WEATHER = 'current_weather' # 現在の天気 conditionで記録
+    SUBTYPE_CURRENT_TEMP = 'current_temp'       # 現在の外気温　conditionで記録
+    SUBTYPE_CURRENT_WIND = 'current_wind'       # 現在の風 conditionで記録
+    SUBTYPE_CURRENT_RAIN = 'current_rain'       # 現在の降水量　conditionで記録
 
     def __init__(self, database='homeDB'):
 
@@ -43,6 +44,30 @@ class mariaDbAgent:
         self.DB_DATABASE = database
 
         return
+
+    def updateData(self, value: str, type, subtype):
+
+        self.log.debug(f'start mariadb update. set={value}, type={type}, subtype={subtype}')
+
+        connection = mariadb.connect(
+            user=self.DB_USER,
+            database=self.DB_DATABASE,
+            host=self.DB_HOST
+        )
+
+        cursor = connection.cursor()
+
+        sql = f'update event set {set} where type={type}, subtype={subtype}'
+
+        try:
+            res = cursor.execute(sql)
+            self.log.debug('update succeed.')
+
+        except Exception as e:
+            res = None
+            self.log.err(e)
+
+        return res
 
     def execSQL(self, sql, table='test'):
         """sqlを直叩き。なんでも入力できるのでレスポンスなし
@@ -62,6 +87,7 @@ class mariaDbAgent:
 
         try:
             cursor.execute(sql)
+            self.log.debug(f'sql execute succeed. sql={sql}')
 
         except Exception as e:
             self.log.err(e)
@@ -108,7 +134,7 @@ class mariaDbAgent:
         try:
             cursor.execute(sql)
             res = cursor.fetchall()
-            set.log.info('sql SELECT executed. sql=', str(sql))
+            set.log.debug('sql SELECT executed. sql=', str(sql))
 
         except Exception as e:
             self.log.err(e)
