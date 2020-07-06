@@ -1,1 +1,1 @@
-from yahooApiAgent import yahooApiAgent
+from .yahooApiAgent import yahooApiAgent

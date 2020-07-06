@@ -10,7 +10,8 @@ from homeUtil import handleEnvironment
 
 LOG_LEVEL = logging.INFO
 
-class natureRemoAgent():
+
+class natureRemoAgent:
     """[summary]
     nature remo apiのAgent.
     5分間に30回の制限あり。

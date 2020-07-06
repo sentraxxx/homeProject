@@ -68,6 +68,7 @@ if __name__ == "__main__":
         el = environmentLogger()
         el.recordHomeTemp()
         el.recordWeather()
+        el.recordRaspberryPiTemp()
 
         log.info('end every 10min task.')
 

@@ -1,7 +1,8 @@
 from homeLogger import environmentLogger
 
 el = environmentLogger()
-el.recordWeather()
+# el.recordWeather()
+el.recordRaspberryPiTemp()
 
 
 """from openWeatherAgent import openWeatherAgent

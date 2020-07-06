@@ -11,9 +11,10 @@ from homeUtil import handleEnvironment
 from natureRemo import natureRemoAgent
 from openWeatherAgent import openWeatherAgent
 from raspberryPiAgent import raspUtil
+from yahooApiAgent import yahooApiAgent
 
 # Environment
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 
 class environmentLogger:
@@ -97,7 +98,8 @@ class environmentLogger:
             self.log.error('Condition OpenWeatherAPI:Current_Weather insert failed.')
 
         # Update Current Weather.
-        value = f'datetime = {date_format}, data={data}'
+        data_j = json.dumps(data)
+        value = f"datetime = {date_format}, data=\'{data_j}\'"
         where_type = mdb.TYPE_CONDITION
         where_subtype = mdb.SUBTYPE_CURRENT_WEATHER
 
@@ -108,11 +110,8 @@ class environmentLogger:
         else:
             self.log.error('update current_weather failed.')
 
-        return
-
         # Record temp DB Insert.
         temp = round(currentj['temp'], 1)
-
         data = {'temp': temp, 'device': 'OpenWeatherAPI'}
 
         result_success = mdb.setEventData(mariaDbAgent.TYPE_RECORD, mariaDbAgent.SUBTYPE_TEMP, date_format, self.place, data)
@@ -125,7 +124,8 @@ class environmentLogger:
         # Update current_temp
         where_type = mdb.TYPE_CONDITION
         where_subtype = mdb.SUBTYPE_CURRENT_TEMP
-        value = f'datetime={date_format}, data={data}'
+        data_j = json.dumps(data)
+        value = f"datetime={date_format}, data=\'{data_j}\'"
 
         result_success = mdb.updateData(value=value, type=where_type, subtype=where_subtype)
 
@@ -134,16 +134,37 @@ class environmentLogger:
         else:
             self.log.error('Condition OpenWeatherAPI:Current_Temp Update failed.')
 
-    def recordRaspberryPiTemp():
+    def recordRain(self):
+
+        agent = 
+
+    def recordRaspberryPiTemp(self):
 
         agent = raspUtil()
         cputemp = agent.getCpuTemp()
-
         data = {'cpu_temp': cputemp, 'device': 'vcgencmd'}
+        now_date = datetime.datetime.now()
+        date_format = datetime.datetime.strftime(now_date, '%Y%m%d%H%M')
 
+        self.log.debug(f'start record RapberryPiTemp. data={data}')
 
+        mdb = mariaDbAgent()
+        result_success = mdb.setEventData(type=mdb.TYPE_RECORD, subtype=mdb.SUBTYPE_RASPI_CPU_TEMP, time=date_format, place=self.place, data=data)
 
-        pass
+        if result_success:
+            self.log.info('Record Cpu_Temp insert succeed.')
+        else:
+            self.log.error('Record Cpu_Temp insert failed.')
+
+        self.log.debug(f'start update RapberryPiTemp. data={data}')
+        data_j = json.dumps(data)
+        values = f'datetime={date_format}, data=\'{data_j}\''
+        result_success = mdb.updateData(value=values, type=mdb.TYPE_CONDITION, subtype=mdb.SUBTYPE_CURRENT_RASPI_CPU_TEMP)
+
+        if result_success:
+            self.log.info('Update current_cpu_temp update succeed.')
+        else:
+            self.log.error('Update current_cpu_temp update failed.')
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import requests
 import datetime
 
 
-class yahooApiAgent():
+class yahooApiAgent:
 
     def __init__(self):
 

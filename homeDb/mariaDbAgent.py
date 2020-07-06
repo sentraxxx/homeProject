@@ -26,10 +26,12 @@ class mariaDbAgent:
     SUBTYPE_RAIN_LEVEL = 'rain_level'           # Yahoo APIから取得する降水量
     SUBTYPE_TEMP = 'temp'                       # 外気温
     SUBTYPE_WEATHER = 'weather'                 # 天気全般
-    SUBTYPE_CURRENT_WEATHER = 'current_weather' # 現在の天気 conditionで記録
+    SUBTYPE_RASPI_CPU_TEMP = 'cpu_temp'         # RaspberryPiのCPU温度
+    SUBTYPE_CURRENT_WEATHER = 'current_weather'     # 現在の天気 conditionで記録
     SUBTYPE_CURRENT_TEMP = 'current_temp'       # 現在の外気温　conditionで記録
     SUBTYPE_CURRENT_WIND = 'current_wind'       # 現在の風 conditionで記録
     SUBTYPE_CURRENT_RAIN = 'current_rain'       # 現在の降水量　conditionで記録
+    SUBTYPE_CURRENT_RASPI_CPU_TEMP = 'current_cpu_temp'     # 現在のRaspberryPiのCPU温度 conditionで記録
 
     def __init__(self, database='homeDB'):
 
@@ -47,7 +49,7 @@ class mariaDbAgent:
 
     def updateData(self, value: str, type, subtype):
 
-        self.log.debug(f'start mariadb update. set={value}, type={type}, subtype={subtype}')
+        self.log.debug(f'start mariadb update. value={value}, type={type}, subtype={subtype}')
 
         connection = mariadb.connect(
             user=self.DB_USER,
@@ -57,7 +59,8 @@ class mariaDbAgent:
 
         cursor = connection.cursor()
 
-        sql = f'update event set {set} where type={type}, subtype={subtype}'
+        sql = f'update event set {value} where type=\'{type}\' and subtype=\'{subtype}\''
+        self.log.debug(f'sql= {sql}')
 
         try:
             res = cursor.execute(sql)
@@ -65,7 +68,7 @@ class mariaDbAgent:
 
         except Exception as e:
             res = None
-            self.log.err(e)
+            self.log.error(e)
 
         return res
 
@@ -90,7 +93,7 @@ class mariaDbAgent:
             self.log.debug(f'sql execute succeed. sql={sql}')
 
         except Exception as e:
-            self.log.err(e)
+            self.log.error(e)
 
         return
 
@@ -137,7 +140,7 @@ class mariaDbAgent:
             set.log.debug('sql SELECT executed. sql=', str(sql))
 
         except Exception as e:
-            self.log.err(e)
+            self.log.error(e)
             res = None
 
         cursor.close()

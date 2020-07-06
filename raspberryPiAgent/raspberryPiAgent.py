@@ -18,7 +18,8 @@ class raspUtil:
         cmd = 'vcgencmd measure_temp'
         result = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
         stdout, stderr = result.communicate()
-        sp_temp = stdout.split('=')
-        cpuTemp = int(sp_temp[1])
+        strtmp = stdout.split('=')
+        sp_temp = strtmp[1].split('\'')
+        cpuTemp = sp_temp[0]
 
-        return cpuTemp
+        return float(cpuTemp)
