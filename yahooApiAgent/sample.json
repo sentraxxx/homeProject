@@ -1,0 +1,148 @@
+{
+    "ResultInfo": {
+        "Count": 1,
+        "Total": 1,
+        "Start": 1,
+        "Status": 200,
+        "Latency": 0.010750,
+        "Description": "",
+        "Copyright": "(C) Yahoo Japan Corporation."
+    },
+    "Feature": [
+        {
+            "Id": "202007061630_139.70135_35.632464",
+            "Name": "地点(139.70135,35.632464)の2020年07月06日 16時30分から115分間の天気情報",
+            "Geometry": {
+                "Type": "point",
+                "Coordinates": "139.70135,35.632464"
+            },
+            "Property": {
+                "WeatherAreaCode": 4410,
+                "WeatherList": {
+                    "Weather": [
+                        {
+                            "Type": "observation",
+                            "Date": "202007061630",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061635",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061640",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061645",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061650",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061655",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061700",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061705",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061710",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061715",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061720",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "observation",
+                            "Date": "202007061725",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061730",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061735",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061740",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061745",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061750",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061755",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061800",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061805",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061810",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061815",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061820",
+                            "Rainfall": 0.00
+                        },
+                        {
+                            "Type": "forecast",
+                            "Date": "202007061825",
+                            "Rainfall": 0.00
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

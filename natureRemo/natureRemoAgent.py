@@ -26,17 +26,15 @@ class natureRemoAgent:
 
         # Log Set.
         handleEnvironment.initialize()
-        self.l=logging.getLogger(__name__)
-        self.l.setLevel(LOG_LEVEL)
-
+        self.log = logging.getLogger(__name__)
+        self.log.setLevel(LOG_LEVEL)
 
     def getTemp(self) -> dict:
         """nature remo apiのdevicesをcall.使える値は室温くらい。
 
         Returns:
-            dict: temp=室温、limit-remain: 残り回数 
+            dict: temp=室温、limit-remain: 残り回数
         """
-
 
         endpoint = self.NATURE_URL + "1/devices"
         authorization_header = 'Bearer ' + self.NATURE_AUTH
@@ -46,8 +44,8 @@ class natureRemoAgent:
             'Authorization': authorization_header,
         }
 
-        self.l.debug("endpoint:" + str(endpoint))
-        self.l.debug("headers:" +  str(headers))
+        self.log.debug("endpoint:" + str(endpoint))
+        self.log.debug("headers:" + str(headers))
 
         res = requests.get(endpoint, headers=headers)
 
@@ -56,7 +54,7 @@ class natureRemoAgent:
         temp = resj[0]["newest_events"]["te"]["val"]
         limit_remain = res.headers["X-Rate-Limit-Remaining"]
 
-        self.l.info("temp= " + str(temp) + "limit_remain= " + str(limit_remain))
+        self.log.debug("temp= " + str(temp) + ", limit_remain= " + str(limit_remain))
 
         return {"temp": temp, "limit-remain": limit_remain}
 
@@ -68,4 +66,3 @@ if __name__ == "__main__":
     print("temp: ", res["temp"])
 
     pass
-

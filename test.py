@@ -1,17 +1,30 @@
 from homeLogger import environmentLogger
+from yahooApiAgent import yahooApiAgent
+from openWeatherAgent import openWeatherAgent
+from accuWeatherAgent import accuWeatherAgent
+from homeDb import mariaDbAgent, dbTester
+from natureRemo import natureRemoAgent
 
-el = environmentLogger()
+
+# yahooAPIテスト.
+"""agent = yahooApiAgent()
+agent.getRainLevel()"""
+
+# environment Loggerテスト.
+agent = environmentLogger()
 # el.recordWeather()
-el.recordRaspberryPiTemp()
+# el.recordRaspberryPiTemp()
+agent.recordHomeTemp()
 
-
-"""from openWeatherAgent import openWeatherAgent
-
-openweather = openWeatherAgent()
+"""openweather = openWeatherAgent()
 openweather.getCurrentOneCall()
 # openweather.getCurrentWeatherByGeo()"""
 
-"""from accuWeatherAgent import accuWeatherAgent
 
-acc = accuWeatherAgent()
+"""acc = accuWeatherAgent()
 acc.getWether()"""
+
+# DB Insertテストモード
+"""agent = dbTester()
+# print(agent.testSelectCount(['type', 'subtype'], ['condition', 'current_']))
+agent.testInsert()"""

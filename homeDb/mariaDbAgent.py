@@ -1,12 +1,11 @@
 from homeUtil import handleEnvironment
-import sys
 import mariadb
+import sys
 import json
 import datetime
 import logging
 
 sys.path.append('/home/pi/share/dev/homeProject/')
-
 
 # Environment.
 LOG_LEVEL = logging.INFO
@@ -19,6 +18,11 @@ class mariaDbAgent:
         インスタンス: mariaDBアクセスのためのインスタンス
     """
 
+    METHOD_INSERT = 'insert'
+    METHOD_SELECT = 'select'
+    METHOD_UPDATE = 'udpate'
+    METHOD_COUNT = 'count'
+
     TYPE_RECORD = 'record'                      # 継続的な記録
     TYPE_ALARM = 'alarm'                        # 何らかのアクションを起こすトリガ
     TYPE_CONDITION = 'condition'                # 現在の状況
@@ -27,6 +31,7 @@ class mariaDbAgent:
     SUBTYPE_TEMP = 'temp'                       # 外気温
     SUBTYPE_WEATHER = 'weather'                 # 天気全般
     SUBTYPE_RASPI_CPU_TEMP = 'cpu_temp'         # RaspberryPiのCPU温度
+    SUBTYPE_CURRENT_HOME_TEMP = 'current_home_temp'     # 現在の室温
     SUBTYPE_CURRENT_WEATHER = 'current_weather'     # 現在の天気 conditionで記録
     SUBTYPE_CURRENT_TEMP = 'current_temp'       # 現在の外気温　conditionで記録
     SUBTYPE_CURRENT_WIND = 'current_wind'       # 現在の風 conditionで記録
@@ -48,22 +53,23 @@ class mariaDbAgent:
         return
 
     def updateData(self, value: str, type, subtype):
+        """event tableのアップデートを行う。主にcurrentのdata更新を想定.
 
+        Args:
+            value (str): 更新する値.data, datetimeなど.
+            type (str): 対象のTYPE. mariadb.TYPE...
+            subtype (str): 対象のSUBTYPE. mariadb.SUBTYPE...
+
+        Returns:
+            [list]: sql実行結果.fetchall()のレスポンス. タプルのリスト.
+        """
         self.log.debug(f'start mariadb update. value={value}, type={type}, subtype={subtype}')
-
-        connection = mariadb.connect(
-            user=self.DB_USER,
-            database=self.DB_DATABASE,
-            host=self.DB_HOST
-        )
-
-        cursor = connection.cursor()
 
         sql = f'update event set {value} where type=\'{type}\' and subtype=\'{subtype}\''
         self.log.debug(f'sql= {sql}')
 
         try:
-            res = cursor.execute(sql)
+            res = self.execSQL(sql, method=mariaDbAgent.METHOD_UPDATE)
             self.log.debug('update succeed.')
 
         except Exception as e:
@@ -72,12 +78,12 @@ class mariaDbAgent:
 
         return res
 
-    def execSQL(self, sql, table='test'):
+    def execSQL(self, sql, method=None):
         """sqlを直叩き。なんでも入力できるのでレスポンスなし
 
         Args:
             sql ([type]): [description]
-            table (str, optional): [description]. Defaults to 'test'.
+            method (str, optional): mariadb.METHOD...の値.現状はINSERTだけ有効
         """
 
         connection = mariadb.connect(
@@ -89,13 +95,24 @@ class mariaDbAgent:
         cursor = connection.cursor()
 
         try:
-            cursor.execute(sql)
+            if method == mariaDbAgent.METHOD_INSERT or method == mariaDbAgent.METHOD_UPDATE:
+                cursor.execute(sql)
+                res = cursor.rowcount
+            else:
+                cursor.execute(sql)
+                res = cursor.fetchall()
+
             self.log.debug(f'sql execute succeed. sql={sql}')
+            self.log.debug(f'sql res: {res}')
 
         except Exception as e:
             self.log.error(e)
+            res = None
 
-        return
+        cursor.close()
+        connection.close()
+
+        return res
 
     def getData(self, table='test', cols=['*']):
         """tableのcols要素を検索.
@@ -189,24 +206,6 @@ class mariaDbAgent:
 
         return res
 
-    def getConnection(self):
-        """mariaDBを直接操作する場合に使用するconnection.
-        connection.Cursor()でcursorをつかみ、sql操作する。
-        https://github.com/mariadb-corporation/mariadb-connector-python
-
-        Returns:
-            mariadb.connection: homeDBへのconnection.
-        """
-
-        connection = mariadb.connect(
-            user=self.DB_USER,
-            # password = self.DB_PASSWD,
-            database=self.DB_DATABASE,
-            host=self.DB_HOST
-        )
-
-        return connection
-
     def setEventData(self, type: str, subtype: str, time: str, place: dict, data: dict, table='event'):
         """homeDBにEventデータを登録する。
 
@@ -263,12 +262,12 @@ class mariaDbAgent:
 
         # close optional values
         sql += op_values + ')'
+        self.log.debug(f'sql={sql}')
 
         try:
-            self.log.info('sql INSERT. sql=' + str(sql))
             cursor.execute(sql)
             self.log.info('sql INSERT executed.')
-            result_success = True
+            result_success = cursor.rowcount
 
         except Exception as e:
             self.log.error(e)
@@ -278,3 +277,74 @@ class mariaDbAgent:
         connection.close()
 
         return result_success
+
+
+class dbTester:
+
+    def __init__(self, database='homeDB'):
+
+        # DBset
+        self.DB_HOST = 'localhost'
+        self.DB_USER = 'root'
+        self.DB_DATABASE = database
+
+    def testInsert(self):
+
+        sql = 'insert into event (type, subtype, datetime) values(\'test_type\', \'test_subtype\', \'202099990000\')'
+
+        res = self.execSQL(sql, method=mariaDbAgent.METHOD_INSERT)
+        print(res)
+
+        return
+
+    def testSelectCount(self, colomn: list, value: list):
+
+        where_str = ' '
+        first = True
+        for i in range(len(colomn)):
+            if first:
+                where_str += f'{colomn[i]}=\'{value[i]}\''
+                first = False
+            else:
+                where_str += f'and {colomn[i]}=\'{value[i]}\''
+
+        sql = f'select count(id) from event where {where_str}'
+
+        res = self.execSQL(sql)
+        count = res[0][0]
+
+        return count
+
+    def execSQL(self, sql, method=None):
+        """sqlを直叩き。なんでも入力できるのでレスポンスなし
+
+        Args:
+            sql ([type]): [description]
+            table (str, optional): [description]. Defaults to 'test'.
+        """
+
+        connection = mariadb.connect(
+            user=self.DB_USER,
+            database=self.DB_DATABASE,
+            host=self.DB_HOST
+        )
+
+        cursor = connection.cursor()
+
+        try:
+            if method == mariaDbAgent.METHOD_INSERT:
+                cursor.execute(sql)
+                res = cursor.rowcount
+                print('insert executed. res=', res)
+            else:
+                res = cursor.fetchall()
+                print('sql executed. res=', res)
+
+        except Exception as e:
+            print(e)
+            res = False
+
+        cursor.close()
+        connection.close()
+
+        return res

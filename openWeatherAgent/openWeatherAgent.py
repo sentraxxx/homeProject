@@ -6,7 +6,7 @@ import json
 from homeUtil import handleEnvironment
 
 
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 
 class openWeatherAgent:
