@@ -8,7 +8,7 @@ from homeLogger import environmentLogger
 from homeUtil import handleEnvironment
 
 # Environment
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 
 class taskManager:
@@ -50,19 +50,19 @@ if __name__ == "__main__":
 
     # 毎時タスク
     if task.IS_EVERY_HOUR:
-        log.info('start every hour task.')
+        log.info('every hour task start.')
 
-        log.info('end every hour task.')
+        log.info('every hour task end.')
 
     # 30分タスク
     if task.IS_EVERY_THIRTY_MIN:
-        log.info('start every 30min task.')
+        log.info('every 30min task start.')
 
-        log.info('end every 30min task.')
+        log.info('every 30min task end.')
 
     # 10分タスク
     if task.IS_EVERY_TEN_MIN:
-        log.info('start every 10min task.')
+        log.info('every 10min task start.')
 
         # natureRemoの室温記録
         el = environmentLogger()
@@ -70,6 +70,6 @@ if __name__ == "__main__":
         el.recordWeather()
         el.recordRaspberryPiTemp()
 
-        log.info('end every 10min task.')
+        log.info('every 10min task end.')
 
     log.info('scheduler end.')

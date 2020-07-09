@@ -9,8 +9,14 @@ from boto3.dynamodb.conditions import Key
 import datetime
 import os
 import sys
+import logging
 
 sys.path.append('/home/pi/share/dev/homeProject/')
+
+from homeUtil import handleEnvironment
+
+# Parameters
+LOG_LEVEL = logging.DEBUG
 
 VT_APPKEY = os.environ['VT_APPKEY']
 VT_DEFAULT_SPEAKER = 'hikari'
@@ -109,16 +115,32 @@ def send_chache(path):
 
 
 @app.route("/makeNotify", methods=['POST'])
-def hoge():
+def makeNotify():
+    """google homeにしゃべらせる.
+    bodyはjson形式. {'text':'message'}
+    パラメータ
+     text: must しゃべらせるメッセージ
+     id: op
+     em: op
+     emlv: op
+     pitch: op
+     speed: op
+     volume: op
+
+    Returns:
+        json: json body.
+    """
+    log.info('-- /makeNotify start.')
+
     data = request.data.decode('utf-8')
-    # print('data',data)
     jdata = json.loads(data)
-    print('jdata', jdata)
+    log.debug(f'request data={jdata}')
     message = jdata['text']
 
     speakers = ['show', 'haruka', 'hikari', 'takeru', 'santa', 'bear']
     emotions = ['happiness', 'anger', 'sadness']
 
+    # set default params
     speaker = speakers[2]
     emotion = emotions[0]
     emlv = 2
@@ -126,6 +148,7 @@ def hoge():
     speed = 100
     volume = 120
 
+    # set parms from request
     if 'id' in jdata:
         speaker = speakers[jdata['id']]
     if 'em' in jdata:
@@ -138,25 +161,26 @@ def hoge():
         speed = jdata['s']
     if 'v' in jdata:
         volume = jdata['v']
-    # print(jd['text'])
 
-    print('message', message)
-    print('speaker', speaker)
-    print('emotion', emotion)
-    print('emlv', emlv)
-    print('pitch', pitch)
-    print('speed', speed)
-    print('volume', volume)
+    log.debug(f'speak param: message={message}, speaker={speaker}, emotion={emotion}, emlv={emlv}, pitch={pitch}, speed={speed}, volume={volume}')
 
     make_wav(message, speaker, emotion, emlv, pitch, speed, volume)
 
+    log.info('--/makeNotify end')
+
     return {
         'statusCode': 200,
-        'body': json.dumps('send message')
+        'body': json.dumps('== RaspberryPi == sent message to googlehomemes')
     }
 
 
 # main script
+handleEnvironment.initialize()
+log = logging.getLogger('homeGate')
+log.setLevel(LOG_LEVEL)
+
+log.info('-- flask server with ngrok start.')
+
 u = get_ngrok_addr()
 update_ngrok_url(u)
 app.run()

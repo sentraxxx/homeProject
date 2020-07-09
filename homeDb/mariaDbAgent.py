@@ -20,6 +20,7 @@ class mariaDbAgent:
 
     METHOD_INSERT = 'insert'
     METHOD_SELECT = 'select'
+    METHOD_SELECT_COUNT = 'select_count'
     METHOD_UPDATE = 'udpate'
     METHOD_COUNT = 'count'
 
@@ -37,6 +38,18 @@ class mariaDbAgent:
     SUBTYPE_CURRENT_WIND = 'current_wind'       # 現在の風 conditionで記録
     SUBTYPE_CURRENT_RAIN = 'current_rain'       # 現在の降水量　conditionで記録
     SUBTYPE_CURRENT_RASPI_CPU_TEMP = 'current_cpu_temp'     # 現在のRaspberryPiのCPU温度 conditionで記録
+    SUBTYPE_ENV = 'env'                         # homeProjectの環境変数で使用.
+    SUBTYPE_GOOGLE_HOME_NOTIFY = 'google_home_notify'   # homeにしゃべらせるalarm.
+
+    # setEnv parameter
+    ENV_MAKE_NOTIFY = 'makeNotify'
+    ENV_ON = 'on'
+    ENV_OFF = 'off'
+
+    # DATA parameter
+    DATA_ALARM_STATUS = 'status'
+    DATA_ALARM_ENABLE = 'enable'
+    DATA_ALARM_DISABLE = 'disable'
 
     def __init__(self, database='homeDB'):
 
@@ -49,6 +62,26 @@ class mariaDbAgent:
         self.DB_HOST = 'localhost'
         self.DB_USER = 'root'
         self.DB_DATABASE = database
+
+        return
+
+    def setEnv(self, param, value):
+
+        self.log.info('-- setEnv start')
+
+        sql = 'select data from event where type = \'condition\' and subtype = \'env\''
+
+        connection = mariadb.connect(
+            user=self.DB_USER,
+            # password = self.DB_PASSWD,
+            database=self.DB_DATABASE,
+            host=self.DB_HOST
+        )
+        cursor = connection.cursor()
+
+        cursor.execute(sql)
+        env_now = cursor.fetchall()
+        print(env_now)
 
         return
 
@@ -79,11 +112,15 @@ class mariaDbAgent:
         return res
 
     def execSQL(self, sql, method=None):
-        """sqlを直叩き。なんでも入力できるのでレスポンスなし
+        """homeDB event tableにSQL直叩き.
+
 
         Args:
-            sql ([type]): [description]
-            method (str, optional): mariadb.METHOD...の値.現状はINSERTだけ有効
+            sql (str): 叩きたいSQL.
+            method (str, optional): mariadb.METHOD_xxxを指定. Defaults to None.
+
+        Returns:
+            [int or list]: MEHTODによって返りが異なる. INSERT,UPDATEはrowcount, それ以外はfetchall()の結果.
         """
 
         connection = mariadb.connect(
@@ -114,27 +151,29 @@ class mariaDbAgent:
 
         return res
 
-    def getData(self, table='test', cols=['*']):
-        """tableのcols要素を検索.
+    def getData(self, cols: list, w_column: list, w_value: list, order: str, by: str):
+        """home DBのevent tableをselect.
 
         Args:
-            table (str, optional): 対象テーブル. Defaults to 'test'.
-            cols (list, optional): 検索の列名リスト. Defaults to ['*'].
+            cols (list): 検索カラムのstrリスト. Noneの場合は"*"指定.
+            w_column (list): where句のカラムリスト. 指定なしはNone.
+            w_value (list): where句のvalueリスト. w_columnと同数必要. 指定なしはNone.
+            order (str): order句のカラム名. 指定なしはNone.
+            by (str): order句の順序指定. asc(昇順. default), desc(降順), 指定なしはNone. 
 
         Returns:
-            list: 検索行のリスト.1行1タプルに格納される.
+            [list]: selectのfetchall()リスト.
         """
-
         connection = mariadb.connect(
             user=self.DB_USER,
-            # password = self.DB_PASSWD,
             database=self.DB_DATABASE,
             host=self.DB_HOST
         )
 
         cursor = connection.cursor()
 
-        if cols[0] == '*':
+        # select cols
+        if cols is None:
             colstr = '*'
 
         else:
@@ -147,14 +186,31 @@ class mariaDbAgent:
                 else:
                     colstr = colstr + ', ' + c
 
-        print('col:', colstr)
+        # where句
+        where_str = ''
+        if w_column is not None:
+            first = True
+            for i in range(len(w_column)):
+                if first:
+                    where_str += f' where {w_column[i]}=\'{w_value[i]}\''
+                    first = False
+                else:
+                    where_str += f' and {w_column[i]}=\'{w_value[i]}\''
 
-        sql = 'select ' + colstr + ' from ' + table
+        # order by
+        order_str = ''
+        if order is not None:
+            order_str += f' order by {order} '
+        if by is not None:
+            order_str += by
+
+        sql = 'select ' + colstr + ' from event' + where_str + order_str
+        self.log.debug(f'sql={sql}')
 
         try:
             cursor.execute(sql)
             res = cursor.fetchall()
-            set.log.debug('sql SELECT executed. sql=', str(sql))
+            self.log.debug('sql SELECT executed. sql=', str(sql))
 
         except Exception as e:
             self.log.error(e)
@@ -266,7 +322,7 @@ class mariaDbAgent:
 
         try:
             cursor.execute(sql)
-            self.log.info('sql INSERT executed.')
+            self.log.debug('sql INSERT executed.')
             result_success = cursor.rowcount
 
         except Exception as e:
@@ -277,6 +333,50 @@ class mariaDbAgent:
         connection.close()
 
         return result_success
+
+    def selectCount(self, colomn: list, value: list):
+        """dbのレコード数をカウントする.
+
+        Args:
+            colomn (list): where句で検索するカラム(str)リスト
+            value (list): where句で検索する値(str)リスト. エスケープ処理は気にしなくていい.
+
+        Returns:
+            int: selectでヒットした件数.
+        """
+        where_str = ''
+        first = True
+        for i in range(len(colomn)):
+            if first:
+                where_str += f'{colomn[i]}=\'{value[i]}\''
+                first = False
+            else:
+                where_str += f' and {colomn[i]}=\'{value[i]}\''
+
+        sql = f'select count(id) from event where {where_str}'
+        print("sql=", sql)
+
+        res = self.execSQL(sql, method=mariaDbAgent.METHOD_SELECT_COUNT)
+        count = res[0][0]
+
+        return count
+
+    def setNotifyAlarm(self, text: str) -> bool:
+        """google home notifyのアラームセット. 登録後、次回のscheduler周期(最短1分後)に実行される.
+
+        Args:
+            text (str): しゃべらせる内容
+
+        Returns:
+            bool: 登録結果.
+        """
+        now = datetime.datetime.now()
+        date_format = now.strftime('%Y%m%d%H%M')
+        data = {'text': text, mariaDbAgent.DATA_ALARM_STATUS: mariaDbAgent.DATA_ALARM_ENABLE}
+
+        res_success = self.setEventData(type=mariaDbAgent.TYPE_ALARM, subtype=mariaDbAgent.SUBTYPE_GOOGLE_HOME_NOTIFY, time=date_format, place=None, data=data)
+
+        return res_success
 
 
 class dbTester:
@@ -298,29 +398,42 @@ class dbTester:
         return
 
     def testSelectCount(self, colomn: list, value: list):
+        """dbのレコード数をカウントする.
 
-        where_str = ' '
+        Args:
+            colomn (list): where句で検索するカラム(str)リスト
+            value (list): where句で検索する値(str)リスト. エスケープ処理は気にしなくていい.
+
+        Returns:
+            int: selectでヒットした件数.
+        """
+        where_str = ''
         first = True
         for i in range(len(colomn)):
             if first:
                 where_str += f'{colomn[i]}=\'{value[i]}\''
                 first = False
             else:
-                where_str += f'and {colomn[i]}=\'{value[i]}\''
+                where_str += f' and {colomn[i]}=\'{value[i]}\''
 
         sql = f'select count(id) from event where {where_str}'
+        print("sql=", sql)
 
-        res = self.execSQL(sql)
+        res = self.execSQL(sql, method=mariaDbAgent.METHOD_SELECT_COUNT)
         count = res[0][0]
 
         return count
 
     def execSQL(self, sql, method=None):
-        """sqlを直叩き。なんでも入力できるのでレスポンスなし
+        """homeDB event tableにSQL直叩き.
+
 
         Args:
-            sql ([type]): [description]
-            table (str, optional): [description]. Defaults to 'test'.
+            sql (str): 叩きたいSQL.
+            method (str, optional): mariadb.METHOD_xxxを指定. Defaults to None.
+
+        Returns:
+            [int or list]: MEHTODによって返りが異なる. INSERT,UPDATEはrowcount, それ以外はfetchall()の結果.
         """
 
         connection = mariadb.connect(
@@ -332,19 +445,26 @@ class dbTester:
         cursor = connection.cursor()
 
         try:
-            if method == mariaDbAgent.METHOD_INSERT:
+            if method == mariaDbAgent.METHOD_INSERT or method == mariaDbAgent.METHOD_UPDATE:
                 cursor.execute(sql)
                 res = cursor.rowcount
-                print('insert executed. res=', res)
+                print(f'sql execute succeed. sql={sql}')
+                print(f'sql res_rowcount: {res}')
             else:
+                cursor.execute(sql)
                 res = cursor.fetchall()
-                print('sql executed. res=', res)
+
+            print(f'sql execute succeed. sql={sql}')
+            print(f'sql res: {res}')
 
         except Exception as e:
             print(e)
-            res = False
+            res = None
 
         cursor.close()
         connection.close()
 
         return res
+
+
+

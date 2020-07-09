@@ -40,7 +40,7 @@ class environmentLogger:
 
     def recordHomeTemp(self):
 
-        self.log.info('start record HomeTemp')
+        self.log.info('--- record home_temp(Nature Remo) start.')
 
         remo = natureRemoAgent()
         temp: float = round(remo.getTemp()['temp'], 1)
@@ -53,9 +53,9 @@ class environmentLogger:
             mariaDbAgent.TYPE_RECORD, mariaDbAgent.SUBTYPE_HOME_TEMP, None, self.place, data)
 
         if result_success is not None:
-            self.log.info('record home_temp event succeed.')
+            self.log.info('record home_temp succeed.')
         else:
-            self.log.error('record home_temp event failed.')
+            self.log.error('record home_temp failed.')
 
         # current_home_temp(natureRemo)アップデート.
         where_type = mdb.TYPE_CONDITION
@@ -67,15 +67,17 @@ class environmentLogger:
         result_success = mdb.updateData(value=values, type=where_type, subtype=where_subtype)
 
         if result_success is not None:
-            self.log.info('record current_home_temp event succeed.')
+            self.log.info('update current_home_temp succeed.')
         else:
-            self.log.error('record current_home_temp event failed.')
+            self.log.error('update current_home_temp failed.')
+
+        self.log.info('--- record home_temp end.')
 
         return
 
     def recordWeather(self):
 
-        self.log.info('start record Weather')
+        self.log.info('--- record Weather(OpentWeather API) start.')
 
         agent = openWeatherAgent()
         res = agent.getCurrentOneCall()
@@ -103,18 +105,16 @@ class environmentLogger:
 
         # Record Weather DB insert
         mdb = mariaDbAgent()
-        self.log.info('start Condition OpenWeatherAPI:Current_Weather.')
         result_success = mdb.setEventData(
             mariaDbAgent.TYPE_RECORD, mariaDbAgent.SUBTYPE_WEATHER, date_format, self.place, data)
 
         if result_success is not None:
-            self.log.info('Condition OpenWeatherAPI:Current_Weather inserted.')
+            self.log.info('record current_weather succeed.')
         else:
             self.log.error(
-                'Condition OpenWeatherAPI:Current_Weather insert failed.')
+                'record current_weather failed.')
 
         # Update Current Weather.
-        self.log.info('start update current_weather.')
         data_j = json.dumps(data)
         value = f"datetime = {date_format}, data=\'{data_j}\'"
         where_type = mdb.TYPE_CONDITION
@@ -129,7 +129,6 @@ class environmentLogger:
             self.log.error('update current_weather failed.')
 
         # Record temp DB Insert.
-        self.log.info('start Record OpenWeatherAPI:Temp.')
         temp = round(currentj['temp'], 1)
         data = {'temp': temp, 'device': 'OpenWeatherAPI'}
 
@@ -137,12 +136,11 @@ class environmentLogger:
             mariaDbAgent.TYPE_RECORD, mariaDbAgent.SUBTYPE_TEMP, date_format, self.place, data)
 
         if result_success is not None:
-            self.log.info('Record OpenWeatherAPI:Temp inserted.')
+            self.log.info('record temp succeed.')
         else:
-            self.log.error('Record OpenWeatherAPI:Temp insert failed.')
+            self.log.error('record temp failed.')
 
         # Update current_temp
-        self.log.info('start Condition OpenWeatherAPI:Current_Temp.')
         where_type = mdb.TYPE_CONDITION
         where_subtype = mdb.SUBTYPE_CURRENT_TEMP
         data_j = json.dumps(data)
@@ -152,14 +150,16 @@ class environmentLogger:
             value=value, type=where_type, subtype=where_subtype)
 
         if result_success is not None:
-            self.log.info('Condition OpenWeatherAPI:Current_Temp Updated.')
+            self.log.info('update temp succeed.')
         else:
             self.log.error(
-                'Condition OpenWeatherAPI:Current_Temp Update failed.')
+                'update temp failed.')
+
+        self.log.info('--- record Weather end.')
 
     def recordRain(self):
 
-        self.log.info('start record Rain from YahooAPI')
+        self.log.info('--- record Rain(YahooAPI) start.')
 
         agent = yahooApiAgent()
         weather_list = agent.getRainLevel()
@@ -172,6 +172,8 @@ class environmentLogger:
         return
 
     def recordRaspberryPiTemp(self):
+
+        self.log.info('--- record raspberrypi cpu_temp start.')
 
         agent = raspUtil()
         cputemp = agent.getCpuTemp()
@@ -186,9 +188,9 @@ class environmentLogger:
             type=mdb.TYPE_RECORD, subtype=mdb.SUBTYPE_RASPI_CPU_TEMP, time=date_format, place=self.place, data=data)
 
         if result_success is not None:
-            self.log.info('Record Cpu_Temp insert succeed.')
+            self.log.info('record cpu_temp succeed.')
         else:
-            self.log.error('Record Cpu_Temp insert failed.')
+            self.log.error('record cpu_temp failed.')
 
         self.log.debug(f'start update RapberryPiTemp. data={data}')
         data_j = json.dumps(data)
@@ -197,9 +199,11 @@ class environmentLogger:
             value=values, type=mdb.TYPE_CONDITION, subtype=mdb.SUBTYPE_CURRENT_RASPI_CPU_TEMP)
 
         if result_success is not None:
-            self.log.info('Update current_cpu_temp update succeed.')
+            self.log.info('update current_cpu_temp update succeed.')
         else:
-            self.log.error('Update current_cpu_temp update failed.')
+            self.log.error('update current_cpu_temp update failed.')
+
+        self.log.info('--- record raspberrypi cpu_temp end.')
 
 
 if __name__ == "__main__":
