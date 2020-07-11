@@ -7,7 +7,7 @@ import json
 sys.path.append('/home/pi/share/dev/homeProject/')
 
 from homeLogger import environmentLogger
-from homeUtil import handleEnvironment, googleHome
+from homeUtil import handleEnvironment, googleHome, ifttt
 from homeDb import mariaDbAgent
 
 # Environment
@@ -20,6 +20,10 @@ class taskManager:
         self.IS_EVERY_HOUR = False
         self.IS_EVERY_THIRTY_MIN = False
         self.IS_EVERY_TEN_MIN = False
+        self.IS_EVERY_FIVE_MIN = False
+
+        # taskで保持するデータ.
+        self.rain_level_before = float(0)
 
     def checkTask(self):
         t = datetime.datetime.now()
@@ -36,6 +40,46 @@ class taskManager:
         if t.minute % 10 == 0:
             self.IS_EVERY_TEN_MIN = True
             log.debug('this is every 10min schedule')
+
+        if t.minute % 5 == 0:
+            self.IS_EVERY_FIVE_MIN = True
+            log.debug('this is every 5min schedule')
+
+    def checkRainCondition(self):
+
+        db = mariaDbAgent()
+        cols = [db.COL_DATA]
+        w_columns = [db.COL_TYPE, db.COL_SUBTYPE]
+        w_values = [db.TYPE_CONDITION, db.SUBTYPE_CURRENT_RAIN_LEVEL]
+        result = db.getData(cols, w_columns, w_values, None, None)
+
+        rain_level_after = float(json.loads(result[0][0])['Rainfall'])
+        log.debug(f'rain level(after) = {rain_level_after}')
+
+        try:
+            if self.rain_level_before == 0 and rain_level_after > 0:
+                log.info(f'** rain level alarm set. {self.rain_level_before} to {rain_level_after}')
+                agent = ifttt()
+                agent.sendMessage(f'雨が振りそうですよー. 予想降水量: {rain_level_after}')
+        except Exception as e:
+            log.debug(e)
+
+        return
+
+    def setRainCondition(self) -> float:
+
+        db = mariaDbAgent()
+        cols = [db.COL_DATA]
+        w_columns = [db.COL_TYPE, db.COL_SUBTYPE]
+        w_values = [db.TYPE_CONDITION, db.SUBTYPE_CURRENT_RAIN_LEVEL]
+        result = db.getData(cols, w_columns, w_values, None, None)
+
+        rain_level = float(json.loads(result[0][0])['Rainfall'])
+        log.debug(f'rain level(before) = {rain_level}')
+
+        self.rain_level_before = rain_level
+
+        return rain_level
 
     def execGoogleHomeNotify(self):
         """event tableのalarm (subtype: google_home_notify)の最古、かつ status=enableを検索し、googlhomeでしゃべらせる.通知後はalarmのstatusをdisableに変更する.
@@ -101,7 +145,11 @@ if __name__ == "__main__":
     log.info('scheduler start.')
 
     task = taskManager()
+    el = environmentLogger()
+
+    # 実行前処理
     task.checkTask()
+    task.setRainCondition()
 
     # 毎時タスク
     if task.IS_EVERY_HOUR:
@@ -120,12 +168,20 @@ if __name__ == "__main__":
         log.info('every 10min task start.')
 
         # natureRemoの室温記録
-        el = environmentLogger()
         el.recordHomeTemp()
         el.recordWeather()
         el.recordRaspberryPiTemp()
 
         log.info('every 10min task end.')
+
+    # 5分タスク
+    if task.IS_EVERY_FIVE_MIN:
+        log.info('every 5min task start.')
+
+        el.recordRain()
+        task.checkRainCondition()
+
+        log.info('every 5min task end.')
 
     # 毎分タスク
     task.execGoogleHomeNotify()

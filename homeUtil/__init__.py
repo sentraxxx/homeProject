@@ -1,2 +1,2 @@
 from .setting import handleEnvironment
-from .notifyAgent import googleHome
+from .notifyAgent import googleHome, ifttt

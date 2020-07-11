@@ -4,10 +4,16 @@ from openWeatherAgent import openWeatherAgent
 from accuWeatherAgent import accuWeatherAgent
 from homeDb import mariaDbAgent, dbTester
 from natureRemo import natureRemoAgent
-from homeUtil import googleHome, handleEnvironment
+from homeUtil import googleHome, handleEnvironment, ifttt
 import datetime
 import requests
 import json
+
+
+
+# IFTTTに通知
+# agent = ifttt()
+# agent.sendMessage('test message')
 
 # google homeにしゃべらせる
 """google = googleHome()
@@ -42,8 +48,8 @@ res = requests.post(URL, json=data)
 print(res)"""
 
 # environment logger  recordRainテスト.
-el = environmentLogger()
-el.recordRain()
+# el = environmentLogger()
+# el.recordRain()
 
 # yahooAPIテスト.
 # agent = yahooApiAgent()

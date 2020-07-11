@@ -161,7 +161,7 @@ class environmentLogger:
         """yahooAPIで取得した降水量情報(過去1時間〜50分後まで5分毎)を記録する.
         取得した時刻ごとにRecord記録.
         現在時刻(forecastの一番最初)はConditionとして登録.
-        
+
         Record(rain)記録.
         該当時刻がなければ新規Record作成.(基本的にforecastが登録される.)
         observationデータ: data時刻でdatetimeを検索.
@@ -179,7 +179,7 @@ class environmentLogger:
              (取得時刻2: x.xx),
              ...
          ],
-         device: YahooAPI 
+         device: YahooAPI
         }
         """
         self.log.info('--- record Rain(YahooAPI) start.')

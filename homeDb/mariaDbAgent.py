@@ -459,6 +459,7 @@ class mariaDbAgent:
 
         return
 
+
 class dbTester:
 
     def __init__(self, database='homeDB'):
@@ -545,6 +546,3 @@ class dbTester:
         connection.close()
 
         return res
-
-
-

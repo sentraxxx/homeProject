@@ -1,8 +1,5 @@
 import os
 import logging
-import requests
-import datetime
-import json
 import sys
 
 sys.path.append('/home/pi/share/dev/homeProject/')
