@@ -64,7 +64,7 @@ class environmentLogger:
         data_j = json.dumps(data)
         values = f'datetime = \'{date_format}\', data = \'{data_j}\''
 
-        result_success = mdb.updateData(value=values, type=where_type, subtype=where_subtype)
+        result_success = mdb.updateConditionData(value=values, type=where_type, subtype=where_subtype)
 
         if result_success is not None:
             self.log.info('update current_home_temp succeed.')
@@ -120,7 +120,7 @@ class environmentLogger:
         where_type = mdb.TYPE_CONDITION
         where_subtype = mdb.SUBTYPE_CURRENT_WEATHER
 
-        result_success = mdb.updateData(
+        result_success = mdb.updateConditionData(
             value=value, type=where_type, subtype=where_subtype)
 
         if result_success is not None:
@@ -146,7 +146,7 @@ class environmentLogger:
         data_j = json.dumps(data)
         value = f"datetime={date_format}, data=\'{data_j}\'"
 
-        result_success = mdb.updateData(
+        result_success = mdb.updateConditionData(
             value=value, type=where_type, subtype=where_subtype)
 
         if result_success is not None:
@@ -158,16 +158,145 @@ class environmentLogger:
         self.log.info('--- record Weather end.')
 
     def recordRain(self):
+        """yahooAPIで取得した降水量情報(過去1時間〜50分後まで5分毎)を記録する.
+        取得した時刻ごとにRecord記録.
+        現在時刻(forecastの一番最初)はConditionとして登録.
+        
+        Record(rain)記録.
+        該当時刻がなければ新規Record作成.(基本的にforecastが登録される.)
+        observationデータ: data時刻でdatetimeを検索.
+                          該当時刻のRecord dataにobserbasionがなければ追加.
+        forecastデータ: data時刻でdatetimeを検索.
+                      該当時刻のRecord dataにforecastデータを追加.
 
+        Condition(current_rain)記録.
+        取得したデータの最初のforecastデータで更新する.(observationだとおそすぎる)
+
+
+        {observation: x.xx,
+         forecast:[
+             (取得時刻1: x.xx),
+             (取得時刻2: x.xx),
+             ...
+         ],
+         device: YahooAPI 
+        }
+        """
         self.log.info('--- record Rain(YahooAPI) start.')
 
         agent = yahooApiAgent()
         weather_list = agent.getRainLevel()
+        get_date = datetime.datetime.now().strftime('%Y%m%d%H%M')
 
-        current_j = {'device': 'YahooAPI'}
-        record_j = {'device': 'YahooAPI'}
+        db = mariaDbAgent()
 
-        mdb = mariaDbAgent()
+        # weather_listを回しながらDB登録.
+        check_forecast = True
+        for weather in weather_list:
+
+            # 該当時刻のデータ取得.
+            rain_date = weather['Date']
+            cols = [db.COL_ID, db.COL_DATA]
+            w_columns = [db.COL_TYPE, db.COL_SUBTYPE, db.COL_DATETIME]
+            w_values = [db.TYPE_RECORD, db.SUBTYPE_RAIN_LEVEL, rain_date]
+            exist_record = db.getData(cols, w_columns, w_values, None, None)
+            self.log.debug(f'get Record(rain_level) at Datetime={rain_date} record={exist_record}')
+
+            # 初回登録判定
+            newRecord = True if len(exist_record) == 0 else False
+
+            # 登録データ
+            place = {'latitude': os.environ['GEO_LATITUDE'], 'longitude': os.environ['GEO_LONGITUDE']}
+
+            # 新規レコード登録
+            if newRecord:
+
+                new_data_j = {}
+
+                if weather['Type'] == 'observation':
+                    new_data_j['observation'] = weather['Rainfall']
+                    new_data_j['forecast'] = []
+                else:
+                    new_data_j['observation'] = 'None'
+                    new_data_j['forecast'] = [[get_date, weather['Rainfall']]]
+
+                new_data_j['device'] = 'YahooAPI'
+
+                # レコード登録
+                result = db.setEventData(db.TYPE_RECORD, db.SUBTYPE_RAIN_LEVEL, rain_date, place, new_data_j)
+                if result:
+                    # self.log.info('new rain_level record insert succeed.')
+                    pass
+                else:
+                    self.log.error('new rain_level record insert failed.')
+
+            # 既存レコード更新
+            else:
+
+                update_id = exist_record[0][0]
+                update_data = json.loads(exist_record[0][1])
+
+                if weather['Type'] == 'observation':
+
+                    update_data['observation'] = weather['Rainfall']
+
+                else:
+                    update_data['forecast'].append([get_date, weather['Rainfall']])
+
+                # 登録データ
+                place = {os.environ['GEO_LATITUDE'], os.environ['GEO_LONGITUDE']}
+
+                set_columns = [db.COL_DATA]
+                set_values = [json.dumps(update_data)]
+                w_columns = [db.COL_ID]
+                w_values = [update_id]
+
+                result = db.updateData(set_columns, set_values, w_columns, w_values)
+                if result:
+                    self.log.debug(f'update Record(rain_level) succeed. target_datetime: {rain_date}')
+                else:
+                    self.log.error('update Record(rain_level) failed.')
+
+            # 最初のforecast(判定) -> Condition登録
+            setCondition = False
+            if check_forecast:
+
+                # 最初にforecastを見つけたらsetCondition実行
+                # check forecast終了.
+                self.log.debug(f'weather type= {weather["Type"]}')
+                if weather['Type'] == 'forecast':
+                    setCondition = True
+                    check_forecast = False
+
+            # Condition更新 -> forecast check off
+            if setCondition:
+                self.log.info('update current_rain_level start.')
+
+                update_data = json.dumps({'Rainfall': weather['Rainfall'], 'device': 'YahooAPI'})
+
+                condition = db.selectCount([db.COL_TYPE, db.COL_SUBTYPE], [db.TYPE_CONDITION, db.SUBTYPE_CURRENT_RAIN_LEVEL])
+                if condition == 0:
+                    result = db.setEventData(db.TYPE_CONDITION, db.SUBTYPE_CURRENT_RAIN_LEVEL, get_date, place, update_data)
+                    if result:
+                        self.log.info('first Condition(current_rain_level) insert succeed.')
+                    else:
+                        self.log.error('first Condition(current_rain_level) insert failed.')
+
+                else:
+                    set_columns = [db.COL_DATETIME, db.COL_DATA]
+                    set_values = [get_date, update_data]
+                    w_columns = [db.COL_TYPE, db.COL_SUBTYPE]
+                    w_values = [db.TYPE_CONDITION, db.SUBTYPE_CURRENT_RAIN_LEVEL]
+
+                    result = db.updateData(set_columns, set_values, w_columns, w_values)
+                    if result:
+                        self.log.debug('update current_rain_level succeed.')
+                    else:
+                        self.log.error('update current_rain_level failed.')
+
+                check_forecast = False
+
+        self.log.info('--- record Rain(YahooAPI) end.')
 
         return
 
@@ -195,7 +324,7 @@ class environmentLogger:
         self.log.debug(f'start update RapberryPiTemp. data={data}')
         data_j = json.dumps(data)
         values = f'datetime=\'{date_format}\', data=\'{data_j}\''
-        result_success = mdb.updateData(
+        result_success = mdb.updateConditionData(
             value=values, type=mdb.TYPE_CONDITION, subtype=mdb.SUBTYPE_CURRENT_RASPI_CPU_TEMP)
 
         if result_success is not None:

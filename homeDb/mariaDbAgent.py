@@ -1,9 +1,9 @@
-from homeUtil import handleEnvironment
 import mariadb
 import sys
 import json
 import datetime
 import logging
+from homeUtil import handleEnvironment
 
 sys.path.append('/home/pi/share/dev/homeProject/')
 
@@ -17,6 +17,12 @@ class mariaDbAgent:
     Returns:
         インスタンス: mariaDBアクセスのためのインスタンス
     """
+    COL_ID = 'id'
+    COL_TYPE = 'type'
+    COL_SUBTYPE = 'subtype'
+    COL_DATETIME = 'datetime'
+    COL_PLACE = 'place'
+    COL_DATA = 'data'
 
     METHOD_INSERT = 'insert'
     METHOD_SELECT = 'select'
@@ -26,6 +32,7 @@ class mariaDbAgent:
 
     TYPE_RECORD = 'record'                      # 継続的な記録
     TYPE_ALARM = 'alarm'                        # 何らかのアクションを起こすトリガ
+    TYPE_ALARM_DONE = 'alarm_done'              # alarm実行後
     TYPE_CONDITION = 'condition'                # 現在の状況
     SUBTYPE_HOME_TEMP = 'home_temp'             # nature Remoから取得する室温
     SUBTYPE_RAIN_LEVEL = 'rain_level'           # Yahoo APIから取得する降水量
@@ -36,7 +43,7 @@ class mariaDbAgent:
     SUBTYPE_CURRENT_WEATHER = 'current_weather'     # 現在の天気 conditionで記録
     SUBTYPE_CURRENT_TEMP = 'current_temp'       # 現在の外気温　conditionで記録
     SUBTYPE_CURRENT_WIND = 'current_wind'       # 現在の風 conditionで記録
-    SUBTYPE_CURRENT_RAIN = 'current_rain'       # 現在の降水量　conditionで記録
+    SUBTYPE_CURRENT_RAIN_LEVEL = 'current_rain_level'       # 現在の降水量　conditionで記録
     SUBTYPE_CURRENT_RASPI_CPU_TEMP = 'current_cpu_temp'     # 現在のRaspberryPiのCPU温度 conditionで記録
     SUBTYPE_ENV = 'env'                         # homeProjectの環境変数で使用.
     SUBTYPE_GOOGLE_HOME_NOTIFY = 'google_home_notify'   # homeにしゃべらせるalarm.
@@ -50,6 +57,7 @@ class mariaDbAgent:
     DATA_ALARM_STATUS = 'status'
     DATA_ALARM_ENABLE = 'enable'
     DATA_ALARM_DISABLE = 'disable'
+    DATA_LAST_UPDATE = 'last_update'
 
     def __init__(self, database='homeDB'):
 
@@ -65,27 +73,45 @@ class mariaDbAgent:
 
         return
 
-    def setEnv(self, param, value):
+    def updateData(self, set_columns: list, set_values: list, w_columns: list, w_values: list) -> int:
+        """homeDB event table update.
 
-        self.log.info('-- setEnv start')
+        Args:
+            set_columns (list): 更新するカラム str list
+            set_values (list): 更新する値 str list (set_colmnsと同数) !! place, dataのupdateは json.dumpsが必要.
+            w_columns (list): 更新する行の検索 where句　str list
+            w_values (list): where句の値　str list
 
-        sql = 'select data from event where type = \'condition\' and subtype = \'env\''
+        Returns:
+            int: 反映したrowcount
+        """
+        set_str = ''
 
-        connection = mariadb.connect(
-            user=self.DB_USER,
-            # password = self.DB_PASSWD,
-            database=self.DB_DATABASE,
-            host=self.DB_HOST
-        )
-        cursor = connection.cursor()
+        first = True
+        for i in range(len(set_columns)):
+            if first:
+                set_str += f'{set_columns[i]}=\'{set_values[i]}\' '
+                first = False
+            else:
+                set_str += f', {set_columns[i]}=\'{set_values[i]}\' '
 
-        cursor.execute(sql)
-        env_now = cursor.fetchall()
-        print(env_now)
+        where_str = ''
+        first = True
+        for i in range(len(w_columns)):
+            if first:
+                where_str += f'where {w_columns[i]}=\'{w_values[i]}\''
+                first = False
+            else:
+                where_str += f' and {w_columns[i]}=\'{w_values[i]}\''
 
-        return
+        sql = 'update event set ' + set_str + where_str
+        self.log.debug(f'sql: {sql}')
 
-    def updateData(self, value: str, type, subtype):
+        res_count = self.execSQL(sql, self.METHOD_UPDATE)
+
+        return res_count
+
+    def updateConditionData(self, value: str, type, subtype):
         """event tableのアップデートを行う。主にcurrentのdata更新を想定.
 
         Args:
@@ -159,7 +185,7 @@ class mariaDbAgent:
             w_column (list): where句のカラムリスト. 指定なしはNone.
             w_value (list): where句のvalueリスト. w_columnと同数必要. 指定なしはNone.
             order (str): order句のカラム名. 指定なしはNone.
-            by (str): order句の順序指定. asc(昇順. default), desc(降順), 指定なしはNone. 
+            by (str): order句の順序指定. asc(昇順. default), desc(降順), 指定なしはNone.
 
         Returns:
             [list]: selectのfetchall()リスト.
@@ -210,7 +236,7 @@ class mariaDbAgent:
         try:
             cursor.execute(sql)
             res = cursor.fetchall()
-            self.log.debug('sql SELECT executed. sql=', str(sql))
+            self.log.debug('sql SELECT executed.')
 
         except Exception as e:
             self.log.error(e)
@@ -240,7 +266,6 @@ class mariaDbAgent:
                 f_first = False
             else:
                 colstr = colstr + ', ' + c
-        print('col: ', colstr)
 
         placeholder = ''
         f_first = True
@@ -253,8 +278,6 @@ class mariaDbAgent:
 
         sql = 'insert into ' + table + \
             ' (' + colstr + ') values (' + placeholder + ')'
-        print('sql: ', sql)
-        print('values:', values)
         res = cursor.execute(sql, values)
 
         cursor.close()
@@ -354,7 +377,6 @@ class mariaDbAgent:
                 where_str += f' and {colomn[i]}=\'{value[i]}\''
 
         sql = f'select count(id) from event where {where_str}'
-        print("sql=", sql)
 
         res = self.execSQL(sql, method=mariaDbAgent.METHOD_SELECT_COUNT)
         count = res[0][0]
@@ -378,6 +400,64 @@ class mariaDbAgent:
 
         return res_success
 
+    def setVoiceTextParam(self, id=1, em=0, emlv=0, pitch=90, speed=100, volume=100):
+        """voiceTextのパラメータ変更. 指定した値以外はdefaultに変更される.
+
+        Args:
+            id (int, optional): 'haruka'(0), 'hikari'(1), 'takeru'(2), 'santa'(3), 'bear'(4). Defaults to 1.
+            em (int, optional): 'happiness'(0), 'anger'(1), 'sadness'(2). Defaults to 2.
+            emlv (int, optional): emortion level 0 to 4. Defaults to 0.
+            pitch (int, optional): pitch(音程) 50 to 200. Defaults to 90.
+            speed (int, optional): speed. 50 to 400 Defaults to 100.
+            volume (int, optional): volume. 50 to 200 Defaults to 100.
+        """
+
+        self.log.info('-- setVoiceTextParam start.')
+
+        now = datetime.datetime.now()
+        date_format = now.strftime('%Y%m%d%H%M')
+
+        db = mariaDbAgent()
+
+        cols = ['data']
+        where_col = [db.COL_TYPE, db.COL_SUBTYPE]
+        where_value = [db.TYPE_CONDITION, db.SUBTYPE_ENV]
+        order = None
+        by = None
+        res = db.getData(cols, where_col, where_value, order, by)
+
+        if len(res) == 0:
+            self.log.error('faild to load condition:env from db. setParam abort.')
+            return
+
+        # dataのvoicetextを更新
+        dataj = json.loads(res[0][0])
+        voicetextj = {
+            'id': id,
+            'em': em,
+            'emlv': emlv,
+            'pitch': pitch,
+            'speed': speed,
+            'volume': volume
+        }
+        dataj['voicetext'] = voicetextj
+
+        # condition:env update
+        set_columns = [db.COL_DATETIME, db.COL_DATA]
+        set_values = [date_format, dataj]
+        w_columns = [db.COL_TYPE, db.COL_SUBTYPE]
+        w_values = [db.TYPE_CONDITION, db.SUBTYPE_ENV]
+
+        res = db.updateData(set_columns, set_values, w_columns, w_values)
+
+        if res > 0:
+            self.log.info('update voiceTextParam succeed.')
+        else:
+            self.log.error('update voiceTextParam failed.')
+
+        self.log.debug('-- setVoiceTextParam end.')
+
+        return
 
 class dbTester:
 

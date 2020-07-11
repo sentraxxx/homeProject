@@ -137,7 +137,7 @@ def makeNotify():
     log.debug(f'request data={jdata}')
     message = jdata['text']
 
-    speakers = ['show', 'haruka', 'hikari', 'takeru', 'santa', 'bear']
+    speakers = ['haruka', 'hikari', 'takeru', 'santa', 'bear']
     emotions = ['happiness', 'anger', 'sadness']
 
     # set default params
@@ -146,7 +146,7 @@ def makeNotify():
     emlv = 2
     pitch = 100
     speed = 100
-    volume = 120
+    volume = 100
 
     # set parms from request
     if 'id' in jdata:
@@ -155,12 +155,12 @@ def makeNotify():
         emotion = emotions[jdata['em']]
     if 'emlv' in jdata:
         emlv = jdata['emlv']
-    if 'p' in jdata:
-        pitch = jdata['p']
-    if 's' in jdata:
-        speed = jdata['s']
-    if 'v' in jdata:
-        volume = jdata['v']
+    if 'pitch' in jdata:
+        pitch = jdata['pitch']
+    if 'speed' in jdata:
+        speed = jdata['speed']
+    if 'volume' in jdata:
+        volume = jdata['volume']
 
     log.debug(f'speak param: message={message}, speaker={speaker}, emotion={emotion}, emlv={emlv}, pitch={pitch}, speed={speed}, volume={volume}')
 

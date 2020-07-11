@@ -5,7 +5,7 @@ import logging
 import json
 from homeUtil import handleEnvironment
 
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 
 class yahooApiAgent:
@@ -24,8 +24,6 @@ class yahooApiAgent:
     def getRainLevel(self, time=0):
 
         now = datetime.datetime.now()
-        print(now)
-
         appid = '?appid=' + self.YAHOO_API_KEY
         coodinate = '&coordinates=' + self.LONGITUDE + ',' + self.LATITUDE
         output = '&output=' + 'json'
@@ -37,11 +35,10 @@ class yahooApiAgent:
 
         try:
             res = requests.get(url=req)
-            self.log.info(f'get url:{req} succeed.')
+            self.log.info('get yahooAPI weather(rain data) succeed.')
 
             weather_list = json.loads(res.text)['Feature'][0]['Property']['WeatherList']['Weather']
-            print(weather_list)
-            print(json.loads(res.text)['Feature'][0]['Name'])
+            self.log.debug(f'weather_list = {weather_list}')
 
         except Exception as e:
             self.log.error(e)

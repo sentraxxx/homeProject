@@ -1,13 +1,20 @@
 import os
 import logging
+import requests
+import datetime
+import json
+import sys
+
+sys.path.append('/home/pi/share/dev/homeProject/')
+
+
+LOG_LEVEL = logging.DEBUG
 
 
 class handleEnvironment:
 
     def __init__(self):
         pass
-
-        return
 
     @staticmethod
     def initialize():
@@ -33,5 +40,3 @@ class handleEnvironment:
             format='[%(asctime)s] %(levelname)s: %(name)s : %(message)s',
             datefmt='%Y-%m-%d %H:%M:%S'
         )
-
-        return

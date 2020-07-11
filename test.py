@@ -4,14 +4,24 @@ from openWeatherAgent import openWeatherAgent
 from accuWeatherAgent import accuWeatherAgent
 from homeDb import mariaDbAgent, dbTester
 from natureRemo import natureRemoAgent
+from homeUtil import googleHome, handleEnvironment
+import datetime
 import requests
 import json
 
+# google homeにしゃべらせる
+"""google = googleHome()
+db = mariaDbAgent()
+db.setVoiceTextParam()
+google.sendMessage('雨、降ってきたみたいですよ.')"""
+
 # mariadb getDataテスト.
-agent = mariaDbAgent()
-res = agent.getData(cols=['type', 'subtype', 'datetime'], w_column=['type'], w_value=['record'], order='datetime', by='desc')
-print(res)
-print(len(res))
+# agent = mariaDbAgent()
+# res = agent.getData(cols=['type', 'subtype', 'datetime', 'data'], w_column=['subtype'], w_value=['current_temp'], order='datetime', by='desc')
+# print(res)
+# print(len(res))
+# data_j = json.loads(res[0][3])
+# print(type(data_j))
 
 # mariadb setNotifyAlarmテスト.
 """agent = mariaDbAgent()
@@ -31,9 +41,13 @@ data = {'text': 'a'}
 res = requests.post(URL, json=data)
 print(res)"""
 
+# environment logger  recordRainテスト.
+el = environmentLogger()
+el.recordRain()
+
 # yahooAPIテスト.
-"""agent = yahooApiAgent()
-agent.getRainLevel()"""
+# agent = yahooApiAgent()
+# agent.getRainLevel()
 
 # environment Loggerテスト.
 """agent = environmentLogger()
