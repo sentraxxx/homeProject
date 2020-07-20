@@ -141,9 +141,9 @@ def makeNotify():
     emotions = ['happiness', 'anger', 'sadness']
 
     # set default params
-    speaker = speakers[2]
+    speaker = speakers[1]
     emotion = emotions[0]
-    emlv = 2
+    emlv = 1
     pitch = 100
     speed = 100
     volume = 100

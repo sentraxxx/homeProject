@@ -137,6 +137,14 @@ class mariaDbAgent:
 
         return res
 
+    def getConnection(self):
+        connection = mariadb.connect(
+            user=self.DB_USER,
+            database=self.DB_DATABASE,
+            host=self.DB_HOST
+        )
+        return connection
+
     def execSQL(self, sql, method=None):
         """homeDB event tableにSQL直叩き.
 
@@ -299,7 +307,6 @@ class mariaDbAgent:
         Returns:
             result_success(bool): success=True. SQL error=False.
         """
-
         # default value set
         if time is None:
             time = datetime.datetime.now().strftime('%Y%m%d%H%M')
@@ -337,7 +344,7 @@ class mariaDbAgent:
         if place:
             op_values += ',\'' + json.dumps(place) + '\''
         if data:
-            op_values += ',\'' + json.dumps(data) + '\''
+            op_values += ',\'' + json.dumps(data, ensure_ascii=False) + '\''
 
         # close optional values
         sql += op_values + ')'

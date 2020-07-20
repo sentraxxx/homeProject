@@ -17,10 +17,16 @@ LOG_LEVEL = logging.INFO
 class taskManager:
 
     def __init__(self):
+
+        # 定期タスク実行判定
         self.IS_EVERY_HOUR = False
         self.IS_EVERY_THIRTY_MIN = False
         self.IS_EVERY_TEN_MIN = False
         self.IS_EVERY_FIVE_MIN = False
+
+        # 時間帯判定
+        self.IS_DAYTIME_WORK = False
+        self.IS_SLEEP_TIME = False
 
         # taskで保持するデータ.
         self.rain_level_before = float(0)
@@ -45,6 +51,14 @@ class taskManager:
             self.IS_EVERY_FIVE_MIN = True
             log.debug('this is every 5min schedule')
 
+        if t.hour > 9 and t.hour < 18:
+            self.IS_DAYTIME_WORK = True
+            log.debug('IS_DAYTIME_WORK = True')
+
+        if t.hour > 0 and t.hour < 7:
+            self.IS_SLEEP_TIME = True
+            log.debug('IS_SLEEP_TYME = True')
+
     def checkRainCondition(self):
 
         db = mariaDbAgent()
@@ -60,7 +74,14 @@ class taskManager:
             if self.rain_level_before == 0 and rain_level_after > 0:
                 log.info(f'** rain level alarm set. {self.rain_level_before} to {rain_level_after}')
                 agent = ifttt()
-                agent.sendMessage(f'雨が振りそうですよー. 予想降水量: {rain_level_after}')
+                message = f'雨が振りそうですよー. 予想降水量は {rain_level_after}'
+                agent.sendMessage(message)
+
+                if self.IS_DAYTIME_WORK or self.IS_SLEEP_TIME:
+                    pass
+                else:
+                    db.setNotifyAlarm(message)
+
         except Exception as e:
             log.debug(e)
 
@@ -117,19 +138,20 @@ class taskManager:
             log.warning('-- google_Home_Notify abort.')
             return
 
-        # typeをalarm->alarm_doneに変更. data statusをdisableに変更, last_updateを設定.
-        alarm_data[db.DATA_ALARM_STATUS] = db.DATA_ALARM_DISABLE
+        if code == 200:
+            # typeをalarm->alarm_doneに変更. data statusをdisableに変更, last_updateを設定.
+            alarm_data[db.DATA_ALARM_STATUS] = db.DATA_ALARM_DISABLE
 
-        now = datetime.datetime.now()
-        date_format = now.strftime('%Y%m%d%H%M')
-        alarm_data[db.DATA_LAST_UPDATE] = date_format
+            now = datetime.datetime.now()
+            date_format = now.strftime('%Y%m%d%H%M')
+            alarm_data[db.DATA_LAST_UPDATE] = date_format
 
-        # alarm更新
-        set_colmns = [db.COL_TYPE, db.COL_DATA]
-        set_values = [db.TYPE_ALARM_DONE, json.dumps(alarm_data)]
-        w_columns = [db.COL_ID]
-        w_values = [str(alarm_id)]
-        db.updateData(set_colmns, set_values, w_columns, w_values)
+            # alarm更新
+            set_colmns = [db.COL_TYPE, db.COL_DATA]
+            set_values = [db.TYPE_ALARM_DONE, json.dumps(alarm_data, ensure_ascii=False)]
+            w_columns = [db.COL_ID]
+            w_values = [str(alarm_id)]
+            db.updateData(set_colmns, set_values, w_columns, w_values)
 
         log.info('-- google_Home_Notify end.')
 
@@ -184,6 +206,12 @@ if __name__ == "__main__":
         log.info('every 5min task end.')
 
     # 毎分タスク
-    task.execGoogleHomeNotify()
+    # task.execGoogleHomeNotify()
+
+    # Schaduler TEST用
+    try:
+        pass
+    except Exception as e:
+        log.error(e)
 
     log.info('scheduler end.')

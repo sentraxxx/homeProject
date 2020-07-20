@@ -9,7 +9,9 @@ import datetime
 import requests
 import json
 
-
+# DBのconnection調査
+agent = mariaDbAgent()
+agent.setNotifyAlarm("日本語")
 
 # IFTTTに通知
 # agent = ifttt()
