@@ -10,13 +10,12 @@ import datetime
 import os
 import sys
 import logging
+import gateFunctions
 
 sys.path.append('/home/pi/share/dev/homeProject/')
 
-from homeUtil import handleEnvironment
-
 # Parameters
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 VT_APPKEY = os.environ['VT_APPKEY']
 VT_DEFAULT_SPEAKER = 'hikari'
@@ -100,7 +99,19 @@ def cast(url, mimetype):
 app = Flask(__name__)
 app.config['port'] = 8080
 
-# API定義
+# Flaskが設定したRoot Handlerを無効化して
+# basicConfigを設定しなおす.
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+
+logging.basicConfig(
+    filename='./logs/homeProject.log',
+    format='[%(asctime)s] %(levelname)s: %(name)s : %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+log = logging.getLogger('homeGate')
+log.setLevel(LOG_LEVEL)
+log.info('-- flask server with ngrok start.')
 
 
 @app.route("/")
@@ -174,13 +185,23 @@ def makeNotify():
     }
 
 
+@app.route("/makeRecord", methods=['POST'])
+def makeRecord():
+    log.info('-- /makeRecord start.')
+
+    data = request.data.decode('utf-8')
+    jdata = json.loads(data)
+    log.debug(f'request data={jdata}')
+
+    gateFunctions.gateFunc.testfunc()
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps('== RaspberryPi == create new Record')
+    }
+
+
 # main script
-handleEnvironment.initialize()
-log = logging.getLogger('homeGate')
-log.setLevel(LOG_LEVEL)
-
-log.info('-- flask server with ngrok start.')
-
 u = get_ngrok_addr()
 update_ngrok_url(u)
 app.run()

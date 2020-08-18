@@ -51,11 +51,11 @@ class taskManager:
             self.IS_EVERY_FIVE_MIN = True
             log.debug('this is every 5min schedule')
 
-        if t.hour > 9 and t.hour < 18:
+        if t.hour >= 8 and t.hour <= 18:
             self.IS_DAYTIME_WORK = True
             log.debug('IS_DAYTIME_WORK = True')
 
-        if t.hour > 0 and t.hour < 7:
+        if t.hour >= 0 and t.hour <= 7:
             self.IS_SLEEP_TIME = True
             log.debug('IS_SLEEP_TYME = True')
 
@@ -206,7 +206,7 @@ if __name__ == "__main__":
         log.info('every 5min task end.')
 
     # 毎分タスク
-    # task.execGoogleHomeNotify()
+    task.execGoogleHomeNotify()
 
     # Schaduler TEST用
     try:

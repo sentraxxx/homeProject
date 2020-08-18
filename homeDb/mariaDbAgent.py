@@ -47,6 +47,8 @@ class mariaDbAgent:
     SUBTYPE_CURRENT_RASPI_CPU_TEMP = 'current_cpu_temp'     # 現在のRaspberryPiのCPU温度 conditionで記録
     SUBTYPE_ENV = 'env'                         # homeProjectの環境変数で使用.
     SUBTYPE_GOOGLE_HOME_NOTIFY = 'google_home_notify'   # homeにしゃべらせるalarm.
+    SUBTYPE_TOILET = 'toilet'                   # トイレ記録
+    SUBTYPE_CURRENT_TOILET = 'current_toilet'   # トイレ状況
 
     # setEnv parameter
     ENV_MAKE_NOTIFY = 'makeNotify'
