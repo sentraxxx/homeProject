@@ -67,7 +67,6 @@ class gateFunc:
         WHEN_LAST_WEEK = '先週'
         WHEN_LAST_MONTH = '先月'
 
-
         # db検索
         db = mariaDbAgent()
 

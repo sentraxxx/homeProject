@@ -15,6 +15,7 @@ python-voicetext = "*"
 boto3 = "*"
 pyaudio = "*"
 mariadb = "*"
+sphinx = "*"
 
 [requires]
 python_version = "3.6"
