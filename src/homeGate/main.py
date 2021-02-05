@@ -90,6 +90,15 @@ def make_wav(text, speaker, emotion, emlv, pitch, speed, volume):
     with open(f'homeGate/cache/{text}_{speaker}_{emotion}_{emlv}_{pitch}_{speed}_{volume}.wav', 'wb')as f:
         f.write(vt.to_wave(text))
         cast(f"{ngrokurl}/cache/{text}_{speaker}_{emotion}_{emlv}_{pitch}_{speed}_{volume}.wav", "audio/wav")
+
+    from homeDb import mariaDbAgent
+
+    try:
+        db = mariaDbAgent()
+        db.setEventData(db.TYPE_ALARM_DONE, db.SUBTYPE_GOOGLE_HOME_NOTIFY, None, None, {'message': text})
+    except Exception as e:
+        logging.error(f'record message failed. exepction={e}')
+
     return
 
 
