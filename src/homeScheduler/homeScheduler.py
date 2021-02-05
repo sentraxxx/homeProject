@@ -31,6 +31,8 @@ class taskManager:
         self.rain_level_before = float(0)
 
     def checkTask(self):
+        """起動時刻(分)をチェックし、起動パターンを決定する.
+        """
         t = datetime.datetime.now()
         print(t.minute)
 

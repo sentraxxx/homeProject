@@ -13,6 +13,8 @@ LOG_LEVEL = logging.INFO
 
 
 class gateFunc:
+    """homeGate::mainのバックエンドで処理、レスポンスコードを作成するクラス.
+    """
 
     def __init__(self):
         handleEnvironment.initialize()
@@ -54,17 +56,17 @@ class gateFunc:
             data (dict): 入力パラメータ. when: 検索期間 who, category
 
         Response:
-            res_text(str): サーチ結果
+            res_text(str): サーチ結果. ex) 今月のジョルノのうんちは2回ありました.
         """
         self.log.info('-- search_osewa_record start')
 
         # when list
         WHEN_LAST_TIME = '前回'
         WHEN_TODAY = '今日'
-        WHEN_THIS_WEEK = '今週'
+        # WHEN_THIS_WEEK = '今週'
         WHEN_THIS_MONTH = '今月'
         WHEN_YESTERDAY = '昨日'
-        WHEN_LAST_WEEK = '先週'
+        # WHEN_LAST_WEEK = '先週'
         WHEN_LAST_MONTH = '先月'
 
         # db検索

@@ -1,14 +1,15 @@
+import logging
+import os
+import sys
+import json
+import datetime
+
 from yahooApiAgent import yahooApiAgent
 from raspberryPiAgent import raspUtil
 from openWeatherAgent import openWeatherAgent
 from natureRemo import natureRemoAgent
 from homeUtil import handleEnvironment
 from homeDb import mariaDbAgent
-import logging
-import os
-import sys
-import json
-import datetime
 
 sys.path.append('/home/pi/share/dev/homeProject/src')
 
@@ -164,22 +165,19 @@ class environmentLogger:
 
         Record(rain)記録.
         該当時刻がなければ新規Record作成.(基本的にforecastが登録される.)
-        observationデータ: data時刻でdatetimeを検索.
-                          該当時刻のRecord dataにobserbasionがなければ追加.
-        forecastデータ: data時刻でdatetimeを検索.
-                      該当時刻のRecord dataにforecastデータを追加.
+        observationデータ: data時刻でdatetimeを検索.該当時刻のRecord dataにobserbasionがなければ追加.
+        forecastデータ: data時刻でdatetimeを検索.該当時刻のRecord dataにforecastデータを追加.
 
         Condition(current_rain)記録.
         取得したデータの最初のforecastデータで更新する.(observationだとおそすぎる)
 
-
         {observation: x.xx,
-         forecast:[
-             (取得時刻1: x.xx),
-             (取得時刻2: x.xx),
-             ...
-         ],
-         device: YahooAPI
+        forecast:[
+        (取得時刻1: x.xx),
+        (取得時刻2: x.xx),
+        ...
+        ],
+        device: YahooAPI
         }
         """
         self.log.info('--- record Rain(YahooAPI) start.')
