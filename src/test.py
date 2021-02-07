@@ -12,9 +12,9 @@ import json
 
 
 # seacrhOsewaRecordテスト
-func = gateFunc()
-res = func.searchOsewaRecord({'when': '前回', 'who': 'ジョルノ', 'category': 'トイレシート交換'})
-print(type(res))
+# func = gateFunc()
+# res = func.searchOsewaRecord({'when': '前回', 'who': 'ジョルノ', 'category': 'トイレシート交換'})
+# print(type(res))
 # print(func.searchOsewaRecord({'when': '今日', 'who': 'ジョルノ', 'category': 'トイレシート交換'}))
 # print(func.searchOsewaRecord({'when': '昨日', 'who': 'ジョルノ', 'category': 'トイレシート交換'}))
 # print(func.searchOsewaRecord({'when': '今月', 'who': 'ジョルノ', 'category': 'トイレシート交換'}))
@@ -25,8 +25,6 @@ print(type(res))
 # print(func.searchOsewaRecord({'when': '昨日', 'who': 'ジョルノ', 'category': 'うんち'}))
 # print(func.searchOsewaRecord({'when': '今月', 'who': 'ジョルノ', 'category': 'うんち'}))
 # print(func.searchOsewaRecord({'when': '先月', 'who': 'ジョルノ', 'category': 'うんち'}))
-
-
 
 # DBのconnection調査
 # agent = mariaDbAgent()
@@ -95,3 +93,12 @@ acc.getWether()"""
 """agent = dbTester()
 # print(agent.testSelectCount(['type', 'subtype'], ['condition', 'current_']))
 agent.testSelectCount(['type', 'subtype'], ['record', 'temp'])"""
+
+# db select test
+db = mariaDbAgent()
+result = db.selectCount([db.COL_SUBTYPE], ['test'])
+print(result)
+
+# db insert test
+result = db.setEventData('test', 'test', None, None, {'message': 'this is test data'})
+print(result)
