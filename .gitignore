@@ -116,7 +116,7 @@ env.bak/
 venv.bak/
 *.code-workspace
 logs/
-homeGate/cache/
+src/homeGate/cache/
 
 
 # Spyder project settings
