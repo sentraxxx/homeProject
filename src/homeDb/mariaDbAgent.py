@@ -8,7 +8,7 @@ from homeUtil import handleEnvironment
 sys.path.append('/home/pi/share/dev/homeProject/src')
 
 # Environment.
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 
 
 class mariaDbAgent:
@@ -182,6 +182,7 @@ class mariaDbAgent:
             res = None
 
         cursor.close()
+        connection.commit()
         connection.close()
 
         return res
@@ -290,6 +291,7 @@ class mariaDbAgent:
         res = cursor.execute(sql, values)
 
         cursor.close()
+        connection.commit()
         connection.close()
 
         return res
@@ -361,6 +363,7 @@ class mariaDbAgent:
             result_success = False
 
         cursor.close()
+        connection.commit()
         connection.close()
 
         return result_success
